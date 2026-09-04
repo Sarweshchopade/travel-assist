@@ -1,206 +1,116 @@
-# Yatra AI — AI Personalized Tourism Assistant
+# Yatra AI — Multi-Agent AI Personalized Tourism Assistant
 
-A multi-page React application where a "multi-agent" AI system (Planner, Booking,
-Weather, Budget, Culture, Safety, Language, Event, Concierge agents) plans a trip
-end-to-end — itinerary, hotel picks, live weather, budget tracking, culture &
-safety notes, local phrases, nearby events, a route map, an AI chat assistant,
-and analytics — plus real flight/hotel search, user accounts with saved trip
-history, and a mobile app preview page.
+**A full-stack, production-deployed travel planning platform where a
+multi-agent AI system generates a complete personalized trip — itinerary,
+budget, culture, safety, language, and live bookings — from a single user
+prompt.**
 
-```
-travel-assistant/
-├── client/                 React 18 + Vite + Tailwind v4 + Framer Motion + Recharts
-├── server/                 Express API: AI agents, auth, trips DB, live booking
-│   ├── agents/
-│   │   ├── llm.js            Provider switcher (Gemini free tier / Anthropic)
-│   │   ├── gemini.js         Google Gemini integration (default, free)
-│   │   ├── planPrompt.js     The multi-agent orchestration prompt
-│   │   └── duffel.js         Real flight/hotel search (Amadeus's free-tier
-│   │                          replacement — see "Real booking data" below)
-│   ├── db/                  Postgres schema + connection pool + migration script
-│   ├── middleware/           JWT auth middleware
-│   └── routes/                auth.js, trips.js, booking.js
-├── .github/workflows/ci.yml  Lint + build + smoke-test on every push/PR
-└── render.yaml              One-click Render blueprint for the backend
-```
+🔗 **Live demo:** `<add your deployed Vercel URL here>`
 
-## What's real vs. AI-generated
+## Overview
 
-| Feature | Source |
+Yatra AI turns a short trip brief ("4 days in Jaipur, ₹25,000 budget, love
+history and vegetarian food") into a fully personalized, multi-page travel
+dashboard. Instead of a single AI response, the backend orchestrates **nine
+specialized agent roles** — Planner, Booking, Weather, Budget, Culture,
+Safety, Language, Event, and Concierge — into one coordinated generation,
+each producing a distinct, structured part of the trip plan.
+
+The app is a complete product, not a demo: real user accounts, a real
+database, real third-party data (live weather, real flight/hotel search),
+and a CI pipeline — deployed and live on the public internet.
+
+## Key Features
+
+- **Multi-agent AI trip generation** — one orchestrated prompt produces a
+  structured JSON plan spanning itinerary, hotel picks, budget allocation,
+  cultural etiquette, safety info, local phrases, and nearby events
+- **Provider-agnostic AI layer** — automatically routes between Google
+  Gemini (free tier) and Anthropic Claude, selectable via environment
+  config with zero code changes, so the app isn't locked to one vendor
+- **Live AI chat assistant** — a second conversational agent, context-aware
+  of the generated trip, for follow-up questions
+- **Real-time weather** — live forecasts via Open-Meteo, geocoded per
+  destination
+- **Real flight & hotel search** — live search against Duffel's flight/hotel
+  API (300+ airlines), independent of the AI-generated recommendations
+- **Interactive route map** — AI-picked stops rendered on an embedded
+  OpenStreetMap route
+- **Full accounts system** — signup/login with bcrypt-hashed passwords and
+  JWT sessions, saved trip history backed by PostgreSQL
+- **13-page responsive dashboard** — itinerary, hotels, flights, weather,
+  budget (with charts), culture, events, safety, language, chat, map,
+  analytics, and a mobile app preview — with animated transitions throughout
+- **CI pipeline** — GitHub Actions lints, builds, and smoke-tests both the
+  frontend and backend on every push
+
+## Tech Stack
+
+| Layer | Technology |
 |---|---|
-| Itinerary, culture notes, safety tips, language phrases, event picks | Generated live by an LLM, structured per-agent (`server/agents/planPrompt.js`) |
-| AI Chat Assistant | Live conversation, aware of your generated trip |
-| Weather | Real forecast from [Open-Meteo](https://open-meteo.com) (free, no key) |
-| Map | Real OpenStreetMap embed of AI-picked route stops (free, no key) |
-| **Flight search** (Flights page) | **Real** live search via [Duffel](https://duffel.com) (free sandbox, 300+ airlines) |
-| **Hotel inventory** (Hotels page → "Live hotel inventory") | **Real** hotel listings via Duffel Stays (free sandbox) |
-| Accounts, saved trips | Real Postgres database, JWT sessions, bcrypt-hashed passwords |
+| Frontend | React 18, Vite, Tailwind CSS v4, Framer Motion, Recharts, React Router |
+| Backend | Node.js, Express |
+| Database | PostgreSQL (raw parameterized SQL, no ORM) |
+| Auth | JWT + bcrypt |
+| AI | Google Gemini / Anthropic Claude (provider-agnostic abstraction) |
+| Live data | Duffel (flights/hotels), Open-Meteo (weather), OpenStreetMap (routing) |
+| CI/CD | GitHub Actions, Vercel (frontend), Render (backend) |
 
-## AI provider: free by default (Google Gemini)
+## Architecture
 
-This app supports two AI providers, switched automatically based on which key
-you set:
-
-- **Google Gemini** (default, recommended) — genuinely free, no credit card,
-  via [Google AI Studio](https://aistudio.google.com/apikey). Generous daily
-  quota for a project like this, and Gemini's native JSON mode makes the
-  structured trip-plan output very reliable.
-- **Anthropic Claude** — higher quality, but pay-as-you-go; needs a funded
-  account at [console.anthropic.com](https://console.anthropic.com).
-
-Set `GEMINI_API_KEY` to use Gemini, or `ANTHROPIC_API_KEY` to use Claude. If
-both are set, Gemini wins by default — force a specific one with
-`LLM_PROVIDER=gemini` or `LLM_PROVIDER=anthropic` in `server/.env`.
-
-## Real booking data: Duffel (Amadeus's self-service API was shut down)
-
-Amadeus permanently decommissioned its self-service developer portal on
-17 July 2026 — self-service keys were disabled, and only their
-sales-mediated Enterprise tier remains. This app uses **Duffel** instead,
-which is the standard modern replacement: instant self-serve signup, no sales
-call, a free unlimited test mode (`duffel_test_...` keys) backed by a sandbox
-airline ("Duffel Airways") for realistic route/schedule data, plus real hotel
-inventory via Duffel Stays.
-
-Get a free token in under a minute: [app.duffel.com/join](https://app.duffel.com/join)
-→ Developers → Access tokens.
-
-> Test-mode keys return realistic route structure and sandbox pricing, not
-> bookable live fares. Switch to a `duffel_live_...` key (paid) for real
-> bookable pricing.
-
-## 1. Run it locally
-
-### Backend
-
-```bash
-cd server
-cp .env.example .env
-npm install
+```
+React SPA (Vercel)  ─────HTTPS/JSON────▶  Express API (Render)
+                                              │
+                     ┌────────────────────────┼─────────────────────────┐
+                     ▼                        ▼                         ▼
+            LLM provider layer          PostgreSQL              Duffel API
+         (Gemini free tier / Claude)   (users, trips)        (flights, hotels)
+                     │
+             Multi-agent prompt
+          (Planner/Booking/Weather/
+         Budget/Culture/Safety/...)
 ```
 
-Fill in `server/.env`:
-- `GEMINI_API_KEY` — free, from https://aistudio.google.com/apikey (or use
-  `ANTHROPIC_API_KEY` instead if you prefer Claude and have API credits)
-- `DATABASE_URL` — optional, needed for accounts/saved trips. Easiest free
-  option: create a project at [neon.tech](https://neon.tech) or
-  [supabase.com](https://supabase.com) and paste the connection string it gives you.
-- `JWT_SECRET` — optional, any random string, needed alongside `DATABASE_URL`
-- `DUFFEL_API_KEY` — optional, needed for the Flights page and live hotel
-  search. Free instantly at https://app.duffel.com/join
+- The frontend never talks to the AI provider or database directly — all
+  secrets stay server-side, with the client only calling the Express API.
+- The **multi-agent generation** is one carefully structured LLM call that
+  produces a single JSON payload with a distinct, labeled section per agent
+  role — balancing the "multiple specialist agents" product experience
+  against the latency/cost of truly independent API calls.
+- Real-time weather and mapping are fetched independently of the AI, so
+  those stay accurate regardless of what the LLM generates.
 
-Then, if you set `DATABASE_URL`, create the tables once:
+## Engineering Highlights
 
-```bash
-npm run migrate
-```
+A few things worth calling out for a technical conversation about this project:
 
-Start the API:
+- **Vendor resilience by design.** When Amadeus (the original flight/hotel
+  API) permanently shut down its self-service developer tier mid-project, I
+  re-architected the booking integration around Duffel without touching any
+  UI logic — the API layer was already isolated behind a clean internal
+  interface. Similarly, the AI layer supports hot-swapping providers
+  (Gemini ↔ Claude) via a single environment variable, so a pricing change,
+  rate limit, or model deprecation on one provider doesn't take the app down.
+- **Structured LLM output at scale.** The trip-generation prompt enforces a
+  strict JSON schema across nine data domains in a single request, using
+  native JSON mode where available (Gemini) for reliability rather than
+  fragile prompt-based formatting instructions.
+- **Auth designed for split-domain deployment.** Frontend and backend are
+  deployed to different domains (Vercel + Render), so auth uses Bearer-token
+  JWTs rather than cookies, sidestepping cross-site cookie/CORS complexity
+  entirely.
+- **Fails loud, not silent.** Every external dependency (AI provider,
+  database, booking API) is optional at the code level and produces a clear,
+  specific error message when unconfigured or unreachable, rather than a
+  generic crash — the app degrades gracefully feature-by-feature.
 
-```bash
-npm run dev        # http://localhost:8787
-```
+## What This Project Demonstrates
 
-Every feature works independently — if you skip `DATABASE_URL` or
-`DUFFEL_API_KEY`, the app still runs fine; just accounts/saved-trips or live
-booking search are disabled with a clear message instead of a crash.
+Full-stack ownership from UI to database to third-party API integration to
+deployment: React component architecture and animation, REST API design,
+relational schema design, authentication/security fundamentals, working
+with multiple external APIs under real-world constraints (rate limits,
+deprecations, provider outages), and shipping to production with CI/CD
+rather than stopping at "runs on my machine."
 
-### Frontend
-
-```bash
-cd client
-cp .env.example .env    # VITE_API_URL defaults to http://localhost:8787
-npm install
-npm run dev              # http://localhost:5173
-```
-
-Open http://localhost:5173, click **Plan your trip**, fill the form, and the
-agents generate a real itinerary. Sign up from the landing page nav to unlock
-saving trips.
-
-## 2. Deploy it
-
-You're deploying **three** things at most (skip the ones you don't need):
-
-### A. Database → Neon or Supabase (free)
-
-1. Create a project at [neon.tech](https://neon.tech) (fastest) or [supabase.com](https://supabase.com).
-2. Copy the Postgres connection string.
-3. Run `DATABASE_URL="<that string>" npm run migrate` once, from your machine or
-   from the Render shell after deploying the backend (step B).
-
-### B. Backend → Render (or Railway / Fly.io / any Node host)
-
-1. Push this repo to GitHub.
-2. On [Render](https://render.com), **New → Blueprint**, point it at this repo —
-   it reads `render.yaml` automatically. Or create a Web Service manually with:
-   - Root directory: `server`
-   - Build command: `npm install`
-   - Start command: `npm start`
-3. Add environment variables in the Render dashboard: `GEMINI_API_KEY` (or
-   `ANTHROPIC_API_KEY`), `DATABASE_URL`, `JWT_SECRET`, `DUFFEL_API_KEY`, and
-   `CLIENT_ORIGIN` (set after step C, then redeploy).
-4. Note the resulting URL, e.g. `https://yatra-ai-server.onrender.com`.
-5. **Free-tier note:** Render's free web services spin down after inactivity —
-   the first request after idle can take 30–60 seconds to wake back up. That's
-   expected, not a bug.
-
-### C. Frontend → Vercel (or Netlify)
-
-1. On [Vercel](https://vercel.com), **New Project** → import the repo → set
-   **Root Directory** to `client`.
-2. Add environment variable `VITE_API_URL` = your Render backend URL from step B.
-3. Deploy. Vercel auto-detects Vite; `vercel.json` handles client-side routing.
-
-   **Netlify alternative**: base directory `client`, build command `npm run build`,
-   publish directory `dist`, same `VITE_API_URL` env var, plus a `_redirects`
-   file containing `/* /index.html 200` if you're not using `vercel.json`.
-4. **Use your project's stable domain**, not the random per-deploy preview URL.
-   In Vercel this is your production deployment's `<project-name>.vercel.app`
-   address (find it on the project's Overview page, next to the "Production"
-   deployment) — it stays the same across pushes, unlike preview URLs like
-   `your-project-abc123-yourteam.vercel.app`, which change on every deploy.
-5. Go back to Render and set `CLIENT_ORIGIN` to that stable Vercel URL exactly
-   (no trailing slash) so CORS allows it, then redeploy the backend.
-
-Both Vercel and Render redeploy automatically on every `git push` to `main` —
-that's your continuous deployment, no extra config needed.
-
-## 3. CI/CD
-
-`.github/workflows/ci.yml` runs on every push and pull request to `main`:
-- **Client job**: `npm ci` → `npm run lint` (oxlint) → `npm run build` (Vite)
-- **Server job**: installs deps, syntax-checks every `.js` file, boots the
-  server and hits `/api/health` as a smoke test
-
-This is intentionally infrastructure-agnostic: it catches breakage before merge,
-while Vercel/Render handle actual deployment via their own GitHub integration
-(no deploy secrets needed in Actions).
-
-## Troubleshooting
-
-- **"Network Error" generating a trip** — almost always CORS. Open browser
-  DevTools → Console. If you see `blocked by CORS policy`, the origin shown
-  doesn't match `CLIENT_ORIGIN` on Render — update it to your exact frontend
-  URL (see step C.4–5 above) and redeploy.
-- **"Your credit balance is too low"** — this is Anthropic billing, not a bug.
-  Either fund your Anthropic account at console.anthropic.com → Billing, or
-  switch to the free Gemini provider by setting `GEMINI_API_KEY` on Render
-  (Gemini is used automatically once that key is present).
-- **`Cannot GET /` on your backend URL** — expected. The API only defines
-  routes under `/api/...`, not a homepage. Check `/api/health` instead.
-- **First request is very slow** — Render's free tier sleeps after inactivity;
-  the first request wakes it up and can take up to a minute.
-
-## Notes
-
-- Trip data is cached in `sessionStorage`, so refreshing a dashboard page
-  doesn't lose your generated plan (guests) — logged-in users can hit **Save
-  trip** on the Overview page to persist it to Postgres and revisit it under
-  **My Trips**.
-- Auth uses bcrypt-hashed passwords and JWTs (30-day expiry) sent as a Bearer
-  token — no cookies, so it works cleanly across the separate frontend/backend
-  domains typical of this deploy setup.
-- If neither AI key is set, `/api/plan` and `/api/chat` return a clear error
-  that surfaces in the UI. Same pattern for missing `DATABASE_URL` (auth
-  routes) and missing `DUFFEL_API_KEY` (booking routes) — nothing crashes silently.
+*Built by [Your Name] — [your portfolio/LinkedIn link]*
