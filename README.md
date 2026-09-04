@@ -5,7 +5,7 @@ multi-agent AI system generates a complete personalized trip — itinerary,
 budget, culture, safety, language, and live bookings — from a single user
 prompt.**
 
-🔗 **Live demo:** `<add your deployed Vercel URL here>`
+🔗 **Live demo:** 
 
 ## Overview
 
